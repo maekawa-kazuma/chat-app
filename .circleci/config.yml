@@ -72,6 +72,9 @@ jobs:
 # rspecを走らせる記述です。
       # run tests!
       - run:
+          name: yarn Install
+          command: yarn install
+      - run:
           name: Rspec
           command: bundle exec rspec
 
