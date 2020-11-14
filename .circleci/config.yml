@@ -2,15 +2,10 @@ version: 2
 jobs:
   build:
     docker:
-      # specify the version you desire here
-      # ruby2.5.1を使ったアプリのため
-      - image: circleci/ruby:2.6.5-node-browsers
+      - image: circleci/ruby:2.6.5-node-browsers-legacy
         environment:
-#  ①注意！！ bundlerのバージョンが2.0.1以上だと、bundle installに失敗します。ここに環境として指定します。
           # - BUNDLER_VERSION: 2.1.4
-#  ②注意！！ circleCIは仮想環境を構築するので、そのときに使うデータベースを指定する必要があります。
           - RAILS_ENV: 'test'
-      # Mysqlのバージョン5.6で動かしていたため、5.6を指定
       - image: circleci/mysql:5.6
         environment:
           - MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
@@ -21,29 +16,46 @@ jobs:
       # documented at https://circleci.com/docs/2.0/circleci-images/
       # - image: circleci/postgres:9.4
 
-    working_directory: ~/repo
+    working_directory: ~/myapp
 
     steps:
       - checkout
-
-      # Download and cache dependencies
+      # キャッシュすることで、テスト等の時間を短縮している
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "Gemfile.lock" }}
+            - myapp-bundle-v1-{{ checksum "Gemfile.lock" }}
+            - myapp-bundle-v1-
+            # - v1-dependencies-{{ checksum "Gemfile.lock" }}
             # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
+            # - v1-dependencies-
       - run:
-          name: install dependencies
+          name: Bundlerをinstall
           command: |
-# ①bundler2.0.1以降のものを使っているのであれば、環境変数と合わせて指定する必要があります。
+            gem update --system
             gem install bundler
-            bundle install --jobs=4 --retry=3 --path vendor/bundle
+      - run:
+          name: Bundle Install
+          command: bundle check || bundle install
+      # - run:
+      #     name: install dependencies
+      #     command: |
+# ①bundler2.0.1以降のものを使っているのであれば、環境変数と合わせて指定する必要があります。
+            # gem install bundler -v 2.0.2
+            # bundle install --jobs=4 --retry=3 --path vendor/bundle
+            # bundle install --jobs=4 --retry=3 --path vendor/bundle
+      # - run:
+      #     name: Bundle Install
+      #     command: bundle check || bundle install
 
       - save_cache:
           paths:
             - ./vendor/bundle
-          key: v1-dependencies-{{ checksum "Gemfile.lock" }}
+          key: myapp-bundle-v1-{{ checksum "Gemfile.lock" }}
+          # key: v1-dependencies-{{ checksum "Gemfile.lock" }}
+      # - restore_cache:
+      #     keys:
+      #       - rails-demo-yarn-{{ checksum "yarn.lock" }}
+      #       - rails-demo-yarn-
 
 # ②ちょっと無理やりですが、database.ymlとdatabase.yml.ciを入れ替える記述です。
       - run: mv config/database.yml.ci config/database.yml 
@@ -60,20 +72,22 @@ jobs:
 # rspecを走らせる記述です。
       # run tests!
       - run:
-          name: run tests
-          command: |
-            mkdir /tmp/test-results
-            TEST_FILES="$(circleci tests glob "spec/**/*_spec.rb" | \
-              circleci tests split --split-by=timings)"
+          name: Rspec
+          command: bundle exec rspec
+
+          # command: |
+          #   mkdir /tmp/test-results
+          #   TEST_FILES="$(circleci tests glob "spec/**/*_spec.rb" | \
+          #     circleci tests split --split-by=timings)"
 
 
 # ③ここでRspecJunitFormatterというgemをインストールしていないとエラーになります。gemfileに記述しましょう。
-            bundle exec rspec \
-              --format progress \
-              --format RspecJunitFormatter \
-              --out /tmp/test-results/rspec.xml \
-              --format progress \
-              $TEST_FILES
+            # bundle exec rspec \
+            #   --format progress \
+            #   --format RspecJunitFormatter \
+            #   --out /tmp/test-results/rspec.xml \
+            #   --format progress \
+            #   $TEST_FILES
 
       # collect reports
       - store_test_results:
