@@ -6,15 +6,6 @@ RSpec.describe 'メッセージ投稿機能', type: :system do
   end
 
   context '投稿に失敗したとき' do
-    it '送る値が空の為、メッセージの送信に失敗すること' do
-      # サインインする
-      sign_in(@room_user.user)
-
-      # 作成されたチャットルームへ遷移する
-      click_on(@room_user.room.name)
-      # 元のページに戻ってくることを確認する
-      expect(current_path).to eq room_messages_path(@room_user.room)
-    end
   end
 
   context '投稿に成功したとき' do
@@ -26,8 +17,6 @@ RSpec.describe 'メッセージ投稿機能', type: :system do
       click_on(@room_user.room.name)
 
       # 値をテキストフォームに入力する
-      post = 'テスト'
-      fill_in 'message_content', with: post
       # 送信した値がDBに保存されていることを確認する
       expect  do
         find('input[name="commit"]').click
@@ -47,8 +36,7 @@ RSpec.describe 'メッセージ投稿機能', type: :system do
       # 添付する画像を定義する
       image_path = Rails.root.join('public/images/test_image.png')
 
-      # 画像選択フォームに画像を添付する
-      attach_file('message[image]', image_path, make_visible: true)
+      # 画像選択フォームに画像を添付す
       # 送信した値がDBに保存されていることを確認する
       expect do
         find('input[name="commit"]').click
@@ -71,8 +59,6 @@ RSpec.describe 'メッセージ投稿機能', type: :system do
       # 画像選択フォームに画像を添付する
       attach_file('message[image]', image_path, make_visible: true)
       # 値をテキストフォームに入力する
-      post = 'テスト'
-      fill_in 'message_content', with: post
       # 送信した値がDBに保存されていることを確認する
       expect  do
         find('input[name="commit"]').click
