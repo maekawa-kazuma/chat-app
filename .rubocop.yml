@@ -6,6 +6,7 @@ AllCops:
    - "db/**/*"
    - "config/**/*"
    - "bin/*"
+   - 'bin/**/*'
    - "node_modules/**/*"
    - "Gemfile"
 
